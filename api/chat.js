@@ -1,3 +1,5 @@
+const fetch = require('node-fetch');
+
 const SYSTEM_PROMPT = `
 Tu es Chronos, l'assistant virtuel expert de TimeTravel Agency.
 Ta personnalité : Professionnel, chaleureux, passionné d'histoire, un peu geek.
