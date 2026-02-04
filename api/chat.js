@@ -1,5 +1,3 @@
-import type { VercelRequest, VercelResponse } from "@vercel/node";
-
 const SYSTEM_PROMPT = `
 Tu es Chronos, l'assistant virtuel expert de TimeTravel Agency.
 Ta personnalité : Professionnel, chaleureux, passionné d'histoire, un peu geek.
@@ -10,7 +8,7 @@ Tes connaissances :
 Consignes : Réponds en français, sois concis (max 3 phrases), donne les prix si demandés.
 `;
 
-export default async function handler(req: VercelRequest, res: VercelResponse) {
+export default async function handler(req, res) {
   // CORS
   res.setHeader("Access-Control-Allow-Origin", "*");
   res.setHeader("Access-Control-Allow-Methods", "POST, OPTIONS");
