@@ -7,16 +7,12 @@ interface Message {
   content: string;
 }
 
-const initialMessage: Message = {
-  role: "assistant",
-  content: "Bienvenue chez TimeTravel Agency ! 🕰️ Je suis votre guide temporel. Comment puis-je vous aider à planifier votre voyage dans le temps ? Posez-moi vos questions sur nos destinations, nos services ou vos préférences de voyage !",
-};
-
 const ChatBot = () => {
   const [isOpen, setIsOpen] = useState(false);
-  const [messages, setMessages] = useState<Message[]>([initialMessage]);
+  const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState("");
   const [isLoading, setIsLoading] = useState(false);
+  const [hasGreeted, setHasGreeted] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   const scrollToBottom = () => {
@@ -27,51 +23,73 @@ const ChatBot = () => {
     scrollToBottom();
   }, [messages]);
 
+  // Fetch greeting from Mistral when chatbot opens for the first time
+  useEffect(() => {
+    const fetchGreeting = async () => {
+      if (isOpen && !hasGreeted && messages.length === 0) {
+        setIsLoading(true);
+        setHasGreeted(true);
+        try {
+          const response = await fetch("/api/chat", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ message: "Présente-toi brièvement en tant que Chronos, le guide temporel de TimeTravel Agency." }),
+          });
+          const data = await response.json();
+          if (response.ok) {
+            setMessages([{ role: "assistant", content: data.content }]);
+          }
+        } catch (error) {
+          console.error(error);
+          setMessages([{ role: "assistant", content: "Bienvenue ! Je suis Chronos, votre guide temporel. Comment puis-je vous aider ?" }]);
+        } finally {
+          setIsLoading(false);
+        }
+      }
+    };
+    fetchGreeting();
+  }, [isOpen, hasGreeted, messages.length]);
+
+  const generateResponse = async (userMessage: string): Promise<string> => {
+    const response = await fetch("/api/chat", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ message: userMessage }),
+    });
+
+    const data = await response.json();
+    
+    if (!response.ok) {
+      throw new Error(data.error || "Erreur API");
+    }
+
+    return data.content;
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!input.trim() || isLoading) return;
 
     const userMessage: Message = { role: "user", content: input.trim() };
     setMessages((prev) => [...prev, userMessage]);
+    const currentInput = input.trim();
     setInput("");
     setIsLoading(true);
 
-    // Simulate AI response (will be replaced with real AI when Cloud is enabled)
-    setTimeout(() => {
-      const responses = getSimulatedResponse(input.trim());
-      setMessages((prev) => [...prev, { role: "assistant", content: responses }]);
+    try {
+      const botResponse = await generateResponse(currentInput);
+      setMessages((prev) => [...prev, { role: "assistant", content: botResponse }]);
+    } catch (error) {
+      console.error(error);
+      setMessages((prev) => [...prev, { 
+        role: "assistant", 
+        content: "Oups, faille temporelle... Veuillez réessayer." 
+      }]);
+    } finally {
       setIsLoading(false);
-    }, 1000);
-  };
-
-  const getSimulatedResponse = (query: string): string => {
-    const lowerQuery = query.toLowerCase();
-    
-    if (lowerQuery.includes("paris") || lowerQuery.includes("1889") || lowerQuery.includes("tour eiffel")) {
-      return "Paris 1889 est notre destination la plus romantique ! 🗼 Vous pourrez assister à l'inauguration de la Tour Eiffel lors de l'Exposition Universelle. Le voyage dure 3 à 7 jours et coûte 15,000€. C'est l'occasion unique de vivre la Belle Époque avec ses cafés littéraires, ses artistes impressionnistes et son effervescence culturelle. Souhaitez-vous en savoir plus sur les expériences proposées ?";
     }
-    
-    if (lowerQuery.includes("dinosaure") || lowerQuery.includes("crétacé") || lowerQuery.includes("préhistoire")) {
-      return "Le Crétacé est notre aventure la plus extrême ! 🦖 Vous explorerez un monde vieux de 68 millions d'années, avec des T-Rex, des Ptéranodons et des paysages volcaniques. C'est notre voyage le plus onéreux (45,000€) mais aussi le plus inoubliable. Attention : une assurance spéciale est obligatoire et vous devrez suivre un protocole de sécurité strict. Êtes-vous prêt pour l'aventure ultime ?";
-    }
-    
-    if (lowerQuery.includes("florence") || lowerQuery.includes("renaissance") || lowerQuery.includes("1504") || lowerQuery.includes("vinci")) {
-      return "Florence 1504, c'est l'apogée de la Renaissance ! 🎨 Rencontrez Léonard de Vinci, assistez au dévoilement du David de Michel-Ange, et participez à un banquet chez les Médicis. Le séjour de 5-10 jours à 22,000€ vous permettra de vivre une époque où l'art et la science redéfinissaient le monde. Une connaissance de l'italien médiéval est recommandée. Quel aspect vous intéresse le plus ?";
-    }
-    
-    if (lowerQuery.includes("prix") || lowerQuery.includes("coût") || lowerQuery.includes("tarif")) {
-      return "Nos tarifs varient selon la destination et la durée :\n\n• Paris 1889 : à partir de 15,000€ (3-7 jours)\n• Florence 1504 : à partir de 22,000€ (5-10 jours)\n• Crétacé : à partir de 45,000€ (1-3 jours)\n\nTous nos forfaits incluent l'équipement d'époque, la formation pré-voyage, et l'assurance temporelle de base. Quelle destination vous attire ?";
-    }
-    
-    if (lowerQuery.includes("sécurité") || lowerQuery.includes("danger") || lowerQuery.includes("risque")) {
-      return "Votre sécurité est notre priorité absolue ! 🛡️ Nous utilisons la technologie de téléportation temporelle la plus avancée, avec un taux de retour de 100%. Chaque voyageur est équipé d'un dispositif de rappel d'urgence et accompagné de guides experts. Pour le Crétacé, des mesures supplémentaires sont prises (véhicules blindés, protocoles anti-prédateurs). Avez-vous des préoccupations spécifiques ?";
-    }
-    
-    if (lowerQuery.includes("réserver") || lowerQuery.includes("réservation") || lowerQuery.includes("book")) {
-      return "Pour réserver votre voyage temporel, rendez-vous sur notre page de réservation ! 📅 Vous pourrez y sélectionner votre destination, choisir vos dates et personnaliser votre expérience. Un conseiller vous contactera ensuite pour finaliser les détails et vous préparer à l'aventure. Puis-je vous aider à choisir la destination idéale pour vous ?";
-    }
-    
-    return "Excellente question ! Chez TimeTravel Agency, nous proposons trois destinations exceptionnelles : Paris 1889 (Belle Époque), le Crétacé (-68 millions d'années) et Florence 1504 (Renaissance). Chaque voyage est une expérience unique, encadrée par des experts et garantie en toute sécurité. Quelle époque vous fascine le plus ? Je peux vous donner tous les détails !";
   };
 
   return (
