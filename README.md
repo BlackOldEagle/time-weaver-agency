@@ -23,7 +23,7 @@ Webapp immersive pour une agence de voyage temporel fictive, permettant de déco
 * **Intelligence Conversationnelle :** Mistral AI (Cerveau du chatbot).
 
 ## 🚀 Accès
-**🔗 Démo en ligne :** https://time-weaver-agency-c3f781cf3-blackoldeagles-projects.vercel.app/
+**🔗 Démo en ligne :** https://time-weaver-agency.vercel.app
 
 ## 📄 Licence
 Projet pédagogique - Exercice Digital & IA.
